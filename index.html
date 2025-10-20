@@ -1,0 +1,90 @@
+
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>Redirecionando…</title>
+  <link rel="icon" href="data:,">
+  <style>
+    html,body{height:100%}
+    body{display:flex;align-items:center;justify-content:center;margin:0;font-family:Arial,Helvetica,sans-serif;background:#f7f7f7}
+    .box{max-width:560px;padding:28px;text-align:center;background:#fff;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.06)}
+    h1{margin:0 0 8px;font-size:22px}
+    p{color:#444;margin:8px 0 14px}
+    a.btn{display:inline-block;font-weight:700;text-decoration:none;padding:14px 20px;border-radius:10px;background:#25d366;color:#fff}
+    small{display:block;margin-top:10px;color:#777}
+  </style>
+  <script>
+    // 1) Lista de números (formato internacional SEM "+")
+    const phones = [
+      "351965040732",
+      // "351960131432",
+      // "351960131439"
+    ];
+
+    // 2) Mensagem curta (já URL-encoded)
+    const msg = "Eu%20quero";
+
+    // 3) Round-robin por sessão (para distribuir contatos)
+    function pickPhone() {
+      try {
+        const k = "wa_rr_index";
+        const i = Number(sessionStorage.getItem(k) || "0");
+        const next = phones[i % phones.length];
+        sessionStorage.setItem(k, String(i + 1));
+        return next;
+      } catch { // se bloquear storage, cai no random
+        return phones[Math.floor(Math.random() * phones.length)];
+      }
+    }
+
+    // 4) Monta links (app + web como fallback)
+    function buildLinks() {
+      const phone = pickPhone();
+      return {
+        app: `whatsapp://send?phone=${phone}&text=${msg}`,
+        web: `https://wa.me/${phone}?text=${msg}`
+      };
+    }
+
+    // 5) Tenta abrir o app; se falhar em 800ms, abre a versão web
+    function redirect() {
+      const { app, web } = buildLinks();
+      const a = document.getElementById("manual");
+      a.href = web; // link manual sempre aponta p/ web
+      let opened = false;
+
+      // tenta app
+      const t = setTimeout(() => {
+        if (!opened) location.href = web;
+      }, 800);
+
+      // alguns browsers bloqueiam, mas não custa tentar
+      const iframe = document.createElement("iframe");
+      iframe.style.display = "none";
+      iframe.src = app;
+      document.body.appendChild(iframe);
+
+      // se o app abrir, geralmente a página perde foco rapidamente
+      window.addEventListener("blur", () => {
+        opened = true;
+        clearTimeout(t);
+      }, { once: true });
+    }
+
+    window.addEventListener("load", () => {
+      redirect();
+    });
+  </script>
+</head>
+<body>
+  <div class="box">
+    <h1>Um momento…</h1>
+    <p>Estamos a encaminhar-te para um representante no WhatsApp.</p>
+    <a id="manual" class="btn" href="#">Abrir no WhatsApp</a>
+    <small>Se não redirecionar automaticamente, clica no botão.</small>
+  </div>
+</body>
+</html>
