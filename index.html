@@ -16,19 +16,16 @@
     small{display:block;margin-top:10px;color:#777}
   </style>
   <script>
-    // 1) Lista de números (formato internacional SEM "+")
     const phones = [
       "351962297176",
       "351935301795",
       "351962297201",
     ];
 
-    // 2) Texto base (não-encodado) -> será encodado dinamicamente
     const rawMsg = "Boas, como é que fizeste mais de 1 MILHÃO a trabalhar com a internet?!💰";
 
-    // 3) Round-robin por sessão (para distribuir contatos)
     function pickPhone() {
-      if (!phones.length) return null; // proteção extra
+      if (!phones.length) return null;
       try {
         const k = "wa_rr_index";
         const i = Number(sessionStorage.getItem(k) || "0");
@@ -40,18 +37,16 @@
       }
     }
 
-    // 4) Monta links (app + web como fallback)
     function buildLinks() {
       const phone = pickPhone();
       if (!phone) return { app: null, web: null };
-      const msg = encodeURIComponent(rawMsg); // <- FALTAVA ISTO
+      const msg = encodeURIComponent(rawMsg);
       return {
-        app: ⁠ whatsapp://send?phone=${phone}&text=${msg} ⁠,
-        web: ⁠ https://wa.me/${phone}?text=${msg} ⁠
+        app: `whatsapp://send?phone=${phone}&text=${msg}`,
+        web: `https://wa.me/${phone}?text=${msg}`
       };
     }
 
-    // 5) Tenta abrir o app; se falhar em 800ms, abre a versão web
     function redirect() {
       const { app, web } = buildLinks();
       const a = document.getElementById("manual");
@@ -62,7 +57,7 @@
         return;
       }
 
-      a.href = web; // link manual sempre aponta p/ web
+      a.href = web;
       a.rel = "noopener noreferrer";
 
       let opened = false;
@@ -70,18 +65,15 @@
         if (!opened) location.href = web;
       }, 800);
 
-      // tenta app via iframe (pode ser bloqueado em alguns browsers)
       try {
         const iframe = document.createElement("iframe");
         iframe.style.display = "none";
         iframe.src = app;
         document.body.appendChild(iframe);
       } catch {
-        // se o iframe falhar, vai direto para o web
         location.href = web;
       }
 
-      // se o app abrir, a página normalmente perde o foco
       const markOpened = () => { opened = true; clearTimeout(t); };
       window.addEventListener("blur", markOpened, { once: true });
       window.addEventListener("pagehide", markOpened, { once: true });
