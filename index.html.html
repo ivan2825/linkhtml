@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="pt">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  <meta name="robots" content="noindex,nofollow" />
+  <title>Redirecionando…</title>
+  <link rel="icon" href="data:,">
+  <style>
+    html,body{height:100%}
+    body{display:flex;align-items:center;justify-content:center;margin:0;font-family:Arial,Helvetica,sans-serif;background:#f7f7f7}
+    .box{max-width:560px;padding:28px;text-align:center;background:#fff;border-radius:12px;box-shadow:0 6px 24px rgba(0,0,0,.06)}
+    h1{margin:0 0 8px;font-size:22px}
+    p{color:#444;margin:8px 0 14px}
+    a.btn{display:inline-block;font-weight:700;text-decoration:none;padding:14px 20px;border-radius:10px;background:#25d366;color:#fff}
+    small{display:block;margin-top:10px;color:#777}
+  </style>
+  <script>
+    // ===== CONFIG =====
+    const PHONES = [
+      "351926521068","351965581277","351967121421","351926520899","351967121410",
+      "351967121405","351926520919","351926520927","351926520939","351926520991"
+    ];
+    const DEFAULT_MSG = "Boas, como é que fizeste mais de 1 MILHÃO a trabalhar com a internet?!💰";
+
+    // ===== UTIL =====
+    const qs = new URLSearchParams(location.search);
+    const rawMsg = (qs.get("msg") || DEFAULT_MSG).trim();
+    const enc = s => encodeURIComponent(s);
+    const cacheBust = () => Date.now().toString(36)+Math.random().toString(36).slice(2,8);
+
+    function randomIndex(max){
+      if (max <= 0) return 0;
+      try{
+        if (crypto && crypto.getRandomValues){
+          const a = new Uint32Array(1);
+          crypto.getRandomValues(a);
+          return a[0] % max;
+        }
+      }catch(_) {}
+      return Math.floor(Math.random()*max);
+    }
+
+    function pickRandomPhone(){
+      return PHONES[randomIndex(PHONES.length)];
+    }
+
+    function buildLinks(){
+      const phone = pickRandomPhone();
+      const msg = enc(rawMsg);
+      const cb = cacheBust();
+      return {
+        phone,
+        app: `whatsapp://send?phone=${phone}&text=${msg}&cb=${cb}`,
+        web: `https://wa.me/${phone}?text=${msg}&cb=${cb}`
+      };
+    }
+
+    // ===== FLOW =====
+    function redirect(){
+      const a = document.getElementById("manual");
+      const { app, web, phone } = buildLinks();
+
+      // Atualiza botão manual
+      a.href = web; a.rel = "noopener noreferrer";
+
+      // Tentativa: abrir app; se não, cai para web
+      let completed = false;
+      const done = () => { completed = true; };
+
+      window.addEventListener("blur", done, { once:true });
+      window.addEventListener("pagehide", done, { once:true });
+      document.addEventListener("visibilitychange", () => { if (document.hidden) done(); }, { once:true });
+
+      const t1 = setTimeout(() => { if (!completed) location.href = web; }, 700);
+      const t2 = setTimeout(() => { if (!completed) location.replace(web); }, 2500);
+
+      try{
+        const iframe = document.createElement("iframe");
+        iframe.style.display = "none";
+        iframe.src = app;
+        document.body.appendChild(iframe);
+      }catch(_){
+        clearTimeout(t1); clearTimeout(t2);
+        location.href = web;
+      }
+
+      // (opcional) debug no console
+      console.log("[WPP] aleatório:", phone);
+    }
+
+    window.addEventListener("load", redirect);
+  </script>
+</head>
+<body>
+  <div class="box">
+    <h1>Um momento…</h1>
+    <p id="info">Estamos a encaminhar-te para um representante no WhatsApp.</p>
+    <a id="manual" class="btn" href="#" rel="noopener">Abrir no WhatsApp</a>
+    <small>Se não redirecionar automaticamente, clica no botão.</small>
+  </div>
+</body>
+</html>
